@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+
+jobs:
+  php-quality:
+    name: PHP standards, static analysis, tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+          tools: composer:v2
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Coding standards (WPCS + VIP)
+        run: composer phpcs
+
+      - name: Static analysis (PHPStan)
+        run: composer phpstan
+
+      - name: Unit tests (PHPUnit)
+        run: composer test
+
+  js-quality:
+    name: JS lint and tests
+    runs-on: ubuntu-latest
+    # Remove this job if the project has no JS build.
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint JS
+        run: npx wp-scripts lint-js
+
+      - name: Lint styles
+        run: npx wp-scripts lint-style
+
+      - name: Unit tests
+        run: npx wp-scripts test-unit-js --passWithNoTests

@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Remove MultiAIStack: per-skill symlinks and the install directory.
+set -euo pipefail
+STACK_NAME="multiaistack"
+CLAUDE_SKILLS="${HOME}/.claude/skills"
+INSTALL_DIR="${CLAUDE_SKILLS}/${STACK_NAME}"
+
+echo "This removes ${STACK_NAME} skill links and ${INSTALL_DIR}."
+read -r -p "Continue? [y/N] " ans
+[[ "${ans}" == "y" || "${ans}" == "Y" ]] || { echo "Aborted."; exit 0; }
+
+removed=0
+for link in "${CLAUDE_SKILLS}"/*/; do
+  link="${link%/}"
+  [[ -L "${link}" ]] || continue
+  target="$(readlink "${link}")"
+  case "${target}" in
+    *"/${STACK_NAME}/skills/"*) rm -f "${link}"; echo "removed $(basename "${link}")"; removed=$((removed+1));;
+  esac
+done
+rm -rf "${INSTALL_DIR}"
+echo "${removed} skill links removed; install directory deleted."
+echo "Project files (AGENTS.md, CLAUDE.md sections, toolchain configs) are"
+echo "left in your repos on purpose; remove them per-repo if you want."

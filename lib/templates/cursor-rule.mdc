@@ -1,0 +1,8 @@
+---
+description: Enterprise WordPress VIP engineering standards
+alwaysApply: true
+---
+
+Follow all rules in the repository's AGENTS.md file. They are non-negotiable and override task-specific instructions where they conflict. Read AGENTS.md before generating any code in this repository.
+
+Before declaring any coding task complete, run `composer phpcs`, `composer phpstan`, and `composer test`, and fix all failures.

@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<ruleset name="Enterprise WordPress Standards">
+	<description>WordPress Coding Standards + VIP standards for AI-assisted development.</description>
+
+	<!-- Scan the plugin/theme source. Adjust paths to your project. -->
+	<file>.</file>
+	<exclude-pattern>/vendor/*</exclude-pattern>
+	<exclude-pattern>/node_modules/*</exclude-pattern>
+	<exclude-pattern>/build/*</exclude-pattern>
+	<exclude-pattern>/tests/*</exclude-pattern>
+
+	<!-- Show sniff codes and progress; run in parallel. -->
+	<arg value="ps"/>
+	<arg name="parallel" value="8"/>
+	<arg name="extensions" value="php"/>
+
+	<!-- Core WordPress standards, including documentation. -->
+	<rule ref="WordPress-Extra"/>
+	<rule ref="WordPress-Docs"/>
+
+	<!-- WordPress VIP platform standards. -->
+	<rule ref="WordPress-VIP-Go"/>
+
+	<!-- Set your minimum supported WP version for deprecation sniffs. -->
+	<config name="minimum_wp_version" value="6.4"/>
+
+	<!-- Verify the project text domain in i18n functions. -->
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="your-text-domain"/>
+			</property>
+		</properties>
+	</rule>
+
+	<!-- Verify everything global is prefixed. -->
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<properties>
+			<property name="prefixes" type="array">
+				<element value="yourprefix"/>
+			</property>
+		</properties>
+	</rule>
+</ruleset>

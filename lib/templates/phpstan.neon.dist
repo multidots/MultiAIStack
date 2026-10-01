@@ -1,0 +1,19 @@
+includes:
+    # WordPress core stubs, constants, and function signatures.
+    - vendor/szepeviktor/phpstan-wordpress/extension.neon
+
+parameters:
+    # Level 6 minimum for existing codebases; raise to 8 for greenfield.
+    level: 6
+    paths:
+        - src
+        # Add your plugin bootstrap file(s):
+        # - your-plugin.php
+    excludePaths:
+        - vendor
+        - node_modules
+        - build
+    # Generate a baseline for legacy code so CI only fails on NEW errors:
+    #   vendor/bin/phpstan analyse --generate-baseline
+    # then uncomment:
+    # - phpstan-baseline.neon

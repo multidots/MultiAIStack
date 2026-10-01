@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+#
+# MultiAIStack setup
+#
+# Installs the MultiAIStack skills for Claude Code (and any tool reading
+# ~/.claude/skills), and optionally wires the current project.
+#
+#   ./setup              install/refresh skills globally
+#   ./setup --project    also add pointer files to the current repo
+#   ./setup --uninstall  remove installed skill links (alias for bin/multiaistack-uninstall)
+#
+set -euo pipefail
+
+STACK_NAME="multiaistack"
+DISPLAY_NAME="MultiAIStack"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CLAUDE_SKILLS="${HOME}/.claude/skills"
+INSTALL_DIR="${CLAUDE_SKILLS}/${STACK_NAME}"
+
+say()  { printf '  %s\n' "$*"; }
+head_(){ printf '\n%s\n' "== $* =="; }
+
+if [[ "${1:-}" == "--uninstall" ]]; then
+  exec "${SCRIPT_DIR}/bin/${STACK_NAME}-uninstall"
+fi
+
+head_ "${DISPLAY_NAME} setup"
+
+# 1. Ensure the repo lives at the canonical install location. If the user
+#    cloned elsewhere, copy it there so skill paths are stable.
+mkdir -p "${CLAUDE_SKILLS}"
+if [[ "${SCRIPT_DIR}" != "${INSTALL_DIR}" ]]; then
+  say "Installing to ${INSTALL_DIR}"
+  rm -rf "${INSTALL_DIR}"
+  cp -R "${SCRIPT_DIR}" "${INSTALL_DIR}"
+else
+  say "Running from canonical install at ${INSTALL_DIR}"
+fi
+
+# 2. Link each skill into ~/.claude/skills/<skill> so Claude Code discovers it.
+head_ "Linking skills"
+installed=0
+for skill_dir in "${INSTALL_DIR}"/skills/*/; do
+  skill="$(basename "${skill_dir}")"
+  link="${CLAUDE_SKILLS}/${skill}"
+  if [[ -e "${link}" && ! -L "${link}" ]]; then
+    say "SKIP  ${skill}  (a non-${STACK_NAME} directory already exists there)"
+    continue
+  fi
+  ln -sfn "${INSTALL_DIR}/skills/${skill}" "${link}"
+  say "OK    /${skill}"
+  installed=$((installed + 1))
+done
+say "${installed} skills linked."
+
+# 3. Optionally wire the current project.
+if [[ "${1:-}" == "--project" ]]; then
+  head_ "Wiring current project ($(pwd))"
+
+  # AGENTS.md: the full contract, only if the repo doesn't have one.
+  if [[ -f "AGENTS.md" ]]; then
+    say "KEEP  AGENTS.md (already present; not overwritten)"
+  else
+    cp "${INSTALL_DIR}/AGENTS.md" "AGENTS.md"
+    say "OK    AGENTS.md"
+  fi
+
+  # CLAUDE.md: append a marked section once.
+  if grep -q "## ${DISPLAY_NAME}" CLAUDE.md 2>/dev/null; then
+    say "KEEP  CLAUDE.md (section already present)"
+  else
+    cat >> CLAUDE.md << CLAUDEEOF
+
+## ${DISPLAY_NAME}
+
+Follow all rules in @AGENTS.md. They are non-negotiable. Before declaring
+any coding task complete, run: composer phpcs, composer phpstan, composer test.
+
+Available skills: /wp-standards /wp-block /wp-plugin /wp-theme /wp-cli
+/vip-review /wp-security /wp-test /wp-ship /wp-setup
+CLAUDEEOF
+    say "OK    CLAUDE.md section appended"
+  fi
+
+  # Cursor rule.
+  if [[ -f ".cursor/rules/wordpress-vip-standards.mdc" ]]; then
+    say "KEEP  .cursor/rules/wordpress-vip-standards.mdc"
+  else
+    mkdir -p .cursor/rules
+    cp "${INSTALL_DIR}/lib/templates/cursor-rule.mdc" ".cursor/rules/wordpress-vip-standards.mdc"
+    say "OK    .cursor/rules/wordpress-vip-standards.mdc"
+  fi
+
+  # Copilot instructions.
+  if [[ -f ".github/copilot-instructions.md" ]]; then
+    say "KEEP  .github/copilot-instructions.md"
+  else
+    mkdir -p .github
+    cp "${INSTALL_DIR}/lib/templates/copilot-instructions.md" ".github/copilot-instructions.md"
+    say "OK    .github/copilot-instructions.md"
+  fi
+
+  say ""
+  say "Next: run /wp-setup inside your agent to install the PHPCS/PHPStan/PHPUnit"
+  say "toolchain and CI workflow, then commit the new files."
+fi
+
+head_ "Done"
+say "Try it: open Claude Code in any repo and run /wp-standards"
+say "New project? Run /wp-setup to install the full quality toolchain."
